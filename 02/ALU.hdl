@@ -43,4 +43,31 @@ CHIP ALU {
 
     PARTS:
    // Put you code here:
+   // Handle x, zx, nx
+   Mux16(a=x, b[0..15]=false, sel=zx, out=ZeroX);
+   Not16(in=ZeroX, out=NotZeroX);
+   Mux16(a=ZeroX, b=NotZeroX, sel=nx, out=ZeroNegateX);
+
+    // Handle y, zy, ny
+   Mux16(a=y, b[0..15]=false, sel=zy, out=ZeroY);
+   Not16(in=ZeroY, out=NotZeroY);
+   Mux16(a=ZeroY, b=NotZeroY, sel=ny, out=ZeroNegateY);
+
+   // Handle f
+   And16(a=ZeroNegateX, b=ZeroNegateY, out=AndXY);
+   Add16(a=ZeroNegateX, b=ZeroNegateY, out=AddXY);
+   Mux16(a=AndXY, b=AddXY, sel=f, out=fXY);
+
+   // Handle out
+   Not16(in=fXY, out=notfXY);
+   Mux16(a=fXY, b=notfXY, sel=no, out=out, out[0..7]=outlow8, out[8..15]=outhigh8, out[15]=out15);
+
+    // Handle zr
+    Or8Way(in=outlow8, out=Oroutlow8);
+    Or8Way(in=outhigh8, out=Orouthigh8);
+    Or(a=Oroutlow8, b=Orouthigh8, out=Notzr);
+    Not(in=Notzr, out=zr);
+
+    // Handle ng
+    Mux(a=false, b=true, sel=out15, out=ng);
 }
