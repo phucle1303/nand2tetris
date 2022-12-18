@@ -16,17 +16,17 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
-    And16(a=in, b[0..15]=true, out=inAnd);
-    Mux16(a=inAnd, b[0..15]=false, sel=reset, out=outReset);
-    Register(in=outReset, load=load, out=outLoad);
-    Inc16(in=outLoad, out=outInc);
-    Mux16(a=outLoad, b=outInc, sel=inc, out=inAnd, out=out);
-    /*
-    Mux16(a=in, b[0..15]=false, sel=reset, out=outReset);
-    Register(in=outReset, load=load, out=outLoad);
-    Inc16(in=loop, out=outInc);
-    //Mux16(a=outReg, b=outInc, sel=inc, out=outIncMux);
-    Register(in=outInc, load=inc, out=loop, out=out);
-    */
+    // Put your code here
+    //inc
+    Inc16(in=outTemp, out=outInc1);
+    Mux16(a=in, b=outInc1, sel=inc, out=outInc2);
+
+    //load
+    Mux16(a=outInc2, b=in, sel=load, out=outLoad);
+
+    //reset
+    Mux16(a=outLoad, b[0..15]=false, sel=reset, out=outReset);
+
+    //clocked output
+    Register(in=outReset, load=true, out=outTemp, out=out);
 }
