@@ -40,5 +40,28 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
-    
+    // Mux16 selects between A instruction and C instruction
+    Mux16(a=instruction, b=ALUMux16In1, sel=instruction[15], out=Mux16Out1);
+
+    // Put instruction to A register
+    ARegister(in=Mux16Out1, load=instruction[5], out=ARegOut, out=addressM, out=ARegPCin);
+
+    // Mux16 selects between A instruction and inM
+    Mux16(a=ARegOut, b=inM, sel=instruction[12], out=Mux16Out2);
+
+    // D register
+    DRegister(in=ALUDRegIn, load=instruction[4], out=DRegOut);
+
+    // writeM
+    Mux16(a=false, b=true, sel=instruction[3], out=writeM);
+
+    // ALU
+    ALU(x=DRegOut, y=ARegOut, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outM, out=ALUDRegIn, out=ALUMux16In1 zr=ALUzr, ng=ALUng);
+
+    // PC
+    Or(a=instruction[0], b=instruction[1], out=OrInstruct1);
+    Or(a=OrInstruct1, b=instruction[2], out=OrInstruct2);
+    Mux(a=true, b=false, sel=OrInstruct2, out=inc);
+    Mux(a=false, b=true, sel=OrInstruct2, out=load);
+    PC(in=ARegPCin, load=load, inc=inc, reset=reset, out=pc);
 }
