@@ -41,27 +41,35 @@ CHIP CPU {
     PARTS:
     // Put your code here:
     // Mux16 selects between A instruction and C instruction
-    Mux16(a=instruction, b=ALUMux16In1, sel=instruction[15], out=Mux16Out1);
+    Mux16(a=instruction, b=ALURegIn, sel=instruction[15], out=Mux16Out1);
 
     // Put instruction to A register
-    ARegister(in=Mux16Out1, load=instruction[5], out=ARegOut, out=addressM, out=ARegPCin);
+    Not(in=instruction[15], out=NotInstr15);
+	Or(a=NotInstr15, b=instruction[5], out=loadA);
+    ARegister(in=Mux16Out1, load=loadA, out=ARegOut, out[0..14]=addressM);
 
     // Mux16 selects between A instruction and inM
     Mux16(a=ARegOut, b=inM, sel=instruction[12], out=Mux16Out2);
 
     // D register
-    DRegister(in=ALUDRegIn, load=instruction[4], out=DRegOut);
+    And(a=instruction[4], b=instruction[15], out=loadD);
+    DRegister(in=ALURegIn, load=loadD, out=DRegOut);
 
     // writeM
-    Mux16(a=false, b=true, sel=instruction[3], out=writeM);
+    And(a=instruction[15], b=instruction[3], out=writeM);
 
     // ALU
-    ALU(x=DRegOut, y=ARegOut, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outM, out=ALUDRegIn, out=ALUMux16In1 zr=ALUzr, ng=ALUng);
+    ALU(x=DRegOut, y=Mux16Out2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outM, out=ALURegIn, zr=ALUzr, ng=ALUng);
 
     // PC
-    Or(a=instruction[0], b=instruction[1], out=OrInstruct1);
-    Or(a=OrInstruct1, b=instruction[2], out=OrInstruct2);
-    Mux(a=true, b=false, sel=OrInstruct2, out=inc);
-    Mux(a=false, b=true, sel=OrInstruct2, out=load);
-    PC(in=ARegPCin, load=load, inc=inc, reset=reset, out=pc);
+    Mux16(a=false, b[0..2]=instruction[0..2], b[3..15]=false, sel=instruction[15], out[0]=jmpIn0, out[1]=jmpIn1, out[2]=jmpIn2);
+    Not(in=ALUzr, out=ALUzrNot);
+    Not(in=ALUng, out=ALUngNot);
+    And(a=ALUzrNot, b=ALUngNot, out=pos);
+    And(a=jmpIn0, b=pos, out=JGT);
+    And(a=jmpIn1, b=ALUzr, out=JEQ);
+    And(a=jmpIn2, b=ALUng, out=JLT);
+    Or(a=JGT, b=JEQ, out=JGE);
+    Or(a=JGE, b=JLT, out=jump);
+    PC(in=ARegOut, load=jump, inc=true, reset=reset, out[0..14]=pc);
 }
